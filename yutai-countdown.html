@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>権利確定日カウントダウン</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+
+  :root{
+    --paper:#f7f5f0;
+    --ink:#1f2a24;
+    --moss:#2f5233;
+    --moss-soft:#e7ede4;
+    --gold:#a3762f;
+    --gold-soft:#fcefdc;
+    --line:#d8d3c6;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    line-height:1.8;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:56px 24px 64px;
+  }
+  .eyebrow{
+    font-size:13px;
+    color:var(--moss);
+    letter-spacing:0.05em;
+    margin:0 0 10px;
+    text-align:center;
+  }
+  h1{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700;
+    font-size:26px;
+    margin:0 0 40px;
+    text-align:center;
+  }
+  .card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:40px 32px;
+    max-width:420px;
+    width:100%;
+    text-align:center;
+  }
+  .label{
+    font-size:14px;
+    color:#5a5a52;
+    margin-bottom:8px;
+  }
+  .date{
+    font-family:'Shippori Mincho', serif;
+    font-size:22px;
+    font-weight:700;
+    color:var(--moss);
+    margin-bottom:28px;
+  }
+  .count-wrap{
+    display:flex;
+    align-items:baseline;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:8px;
+  }
+  .count{
+    font-family:'Shippori Mincho', serif;
+    font-size:64px;
+    font-weight:700;
+    color:var(--ink);
+    line-height:1;
+  }
+  .count-unit{
+    font-size:18px;
+    color:#5a5a52;
+  }
+  .sub{
+    font-size:13px;
+    color:#8a8a7f;
+    margin-top:4px;
+  }
+  .divider{
+    height:1px;
+    background:var(--line);
+    margin:28px 0;
+  }
+  .note{
+    background:var(--gold-soft);
+    border-radius:10px;
+    padding:14px 16px;
+    font-size:12.5px;
+    color:#6b5323;
+    text-align:left;
+  }
+  footer{
+    margin-top:32px;
+    font-size:12px;
+    color:#8a8a7f;
+    text-align:center;
+    max-width:420px;
+  }
+</style>
+</head>
+<body>
+
+<p class="eyebrow">株主優待</p>
+<h1>次の権利確定日まで</h1>
+
+<div class="card">
+  <div class="label">直近の主要な権利確定日</div>
+  <div class="date" id="target-date">—</div>
+
+  <div class="count-wrap">
+    <span class="count" id="days">—</span>
+    <span class="count-unit">日</span>
+  </div>
+  <div class="sub" id="today-label"></div>
+
+  <div class="divider"></div>
+
+  <div class="note">
+    ここで示すのは3月・6月・9月・12月の月末という、多くの企業に共通する代表的な権利確定日です。実際の日付や必要な購入タイミングは銘柄ごとに異なるため、必ず各企業の発表内容をご確認ください。
+  </div>
+</div>
+
+<footer>
+  株主優待の新設・変更・廃止情報を発信しているアカウントの参考資料です。
+</footer>
+
+<script>
+  function getNextQuarterEnd(from) {
+    const quarterMonths = [2, 5, 8, 11]; // 0-indexed: Mar, Jun, Sep, Dec
+    let year = from.getFullYear();
+    let candidates = [];
+
+    for (let y = year; y <= year + 1; y++) {
+      for (const m of quarterMonths) {
+        const lastDay = new Date(y, m + 1, 0); // last calendar day of month
+        candidates.push(lastDay);
+      }
+    }
+
+    candidates.sort((a, b) => a - b);
+    const startOfToday = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+    for (const c of candidates) {
+      if (c >= startOfToday) return c;
+    }
+    return candidates[0];
+  }
+
+  function formatDate(d) {
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const day = d.getDate();
+    return y + "年" + m + "月" + day + "日";
+  }
+
+  const now = new Date();
+  const target = getNextQuarterEnd(now);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffDays = Math.round((target - startOfToday) / (1000 * 60 * 60 * 24));
+
+  document.getElementById("target-date").textContent = formatDate(target);
+  document.getElementById("days").textContent = diffDays === 0 ? "当日" : diffDays;
+  document.getElementById("today-label").textContent =
+    diffDays === 0 ? "今日が権利確定日です" : "本日: " + formatDate(now);
+</script>
+
+</body>
+</html>
