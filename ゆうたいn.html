@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>権利確定日カウントダウン</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+
+  :root{
+    --paper:#f7f5f0;
+    --ink:#1f2a24;
+    --moss:#2f5233;
+    --moss-soft:#e7ede4;
+    --gold:#a3762f;
+    --gold-soft:#fcefdc;
+    --line:#d8d3c6;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    line-height:1.8;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:56px 24px 64px;
+  }
+  .eyebrow{
+    font-size:13px;
+    color:var(--moss);
+    letter-spacing:0.05em;
+    margin:0 0 10px;
+    text-align:center;
+  }
+  h1{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700;
+    font-size:26px;
+    margin:0 0 40px;
+    text-align:center;
+  }
+  .card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:40px 32px;
+    max-width:420px;
+    width:100%;
+    text-align:center;
+  }
+  .label{
+    font-size:14px;
+    color:#5a5a52;
+    margin-bottom:8px;
+  }
+  .date{
+    font-family:'Shippori Mincho', serif;
+    font-size:22px;
+    font-weight:700;
+    color:var(--moss);
+    margin-bottom:28px;
+  }
+  .count-wrap{
+    display:flex;
+    align-items:baseline;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:8px;
+  }
+  .count{
+    font-family:'Shippori Mincho', serif;
+    font-size:64px;
+    font-weight:700;
+    color:var(--ink);
+    line-height:1;
+  }
+  .count-unit{
+    font-size:18px;
+    color:#5a5a52;
+  }
+  .sub{
+    font-size:13px;
+    color:#8a8a7f;
+    margin-top:4px;
+  }
+  .divider{
+    height:1px;
+    background:var(--line);
+    margin:28px 0;
+  }
+  .note{
+    background:var(--gold-soft);
+    border-radius:10px;
+    padding:14px 16px;
+    font-size:12.5px;
+    color:#6b5323;
+    text-align:left;
+  }
+  footer{
+    margin-top:32px;
+    font-size:12px;
+    color:#8a8a7f;
+    text-align:center;
+    max-width:420px;
+  }
+
+  .date-sub{font-size:14px;color:#5a5a52;margin:-18px 0 28px;}
+  .sched{width:100%;max-width:420px;margin-top:24px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 20px 12px;}
+  .sched h2{font-family:'Shippori Mincho', serif;font-size:16px;margin:0 0 10px;text-align:left;}
+  .sched table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .sched th,.sched td{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left;font-weight:500;}
+  .sched th{color:#5a5a52;font-size:12px;}
+  .sched tr.next td{background:var(--moss-soft);color:var(--moss);font-weight:700;}
+  .sched tr.past td{color:#b0aea3;}
+</style>
+</head>
+<body>
+
+<p class="eyebrow">株主優待</p>
+<h1>権利付き最終日まで</h1>
+
+<div class="card">
+  <div class="label">次の月末権利の購入期限(権利付き最終日)</div>
+  <div class="date" id="target-date">—</div>
+  <div class="date-sub" id="kakutei-date"></div>
+
+  <div class="count-wrap">
+    <span class="count" id="days">—</span>
+    <span class="count-unit">日</span>
+  </div>
+  <div class="sub" id="today-label"></div>
+
+  <div class="divider"></div>
+
+  <div class="note">
+    毎月末が権利確定日の銘柄を対象にした日程です。権利付き最終日までに買い、大引けまで保有する必要があります。実際の日付は銘柄ごとに異なるため、必ず各企業の発表内容と証券会社の案内をご確認ください。
+  </div>
+</div>
+
+<div class="sched">
+  <h2>月末権利の日程</h2>
+  <table>
+    <thead><tr><th>月末</th><th>権利付き最終日</th><th>権利確定日</th></tr></thead>
+    <tbody id="sched-body"></tbody>
+  </table>
+</div>
+
+<footer>
+  株主優待の新設・変更・廃止情報を発信しているアカウントの参考資料です。日程は証券会社の公開情報をもとにしており、投資判断はご自身でお願いします。
+</footer>
+
+<script>
+  // [月末, 権利付き最終日, 権利確定日] ※証券会社公表の日程(2026年10月〜2027年7月)
+  const SCHEDULE = [
+    ["2026-10","2026-10-28","2026-10-30"],
+    ["2026-11","2026-11-26","2026-11-30"],
+    ["2026-12","2026-12-28","2026-12-30"],
+    ["2027-01","2027-01-27","2027-01-29"],
+    ["2027-02","2027-02-24","2027-02-26"],
+    ["2027-03","2027-03-29","2027-03-31"],
+    ["2027-04","2027-04-27","2027-04-30"],
+    ["2027-05","2027-05-27","2027-05-31"],
+    ["2027-06","2027-06-28","2027-06-30"],
+    ["2027-07","2027-07-28","2027-07-30"]
+  ];
+  const WD = ["日","月","火","水","木","金","土"];
+  function parse(str){ const p=str.split("-").map(Number); return new Date(p[0],p[1]-1,p[2]); }
+  function md(d){ return (d.getMonth()+1)+"/"+d.getDate()+"("+WD[d.getDay()]+")"; }
+  function formatDate(d){ return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日("+WD[d.getDay()]+")"; }
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const rows = SCHEDULE.map(r => ({ label:r[0], last:parse(r[1]), fix:parse(r[2]) }));
+  const next = rows.find(r => r.last >= today);
+
+  if (next) {
+    const diff = Math.round((next.last - today) / 86400000);
+    document.getElementById("target-date").textContent = formatDate(next.last);
+    document.getElementById("kakutei-date").textContent = "権利確定日:" + formatDate(next.fix);
+    document.getElementById("days").textContent = diff === 0 ? "本日" : diff;
+    document.getElementById("today-label").textContent = diff === 0 ? "今日が権利付き最終日です(大引けまでに約定・保有)" : "本日: " + formatDate(now);
+  } else {
+    document.getElementById("target-date").textContent = "日程を更新中です";
+    document.getElementById("days").textContent = "—";
+  }
+
+  const tbody = document.getElementById("sched-body");
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+    if (r.last < today) tr.className = "past";
+    else if (next && r === next) tr.className = "next";
+    const m = r.label.split("-");
+    tr.innerHTML = "<td>" + m[0] + "年" + Number(m[1]) + "月末</td><td>" + md(r.last) + "</td><td>" + md(r.fix) + "</td>";
+    tbody.appendChild(tr);
+  });
+</script>
+
+</body>
+</html>
