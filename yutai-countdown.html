@@ -107,16 +107,26 @@
     text-align:center;
     max-width:420px;
   }
+
+  .date-sub{font-size:14px;color:#5a5a52;margin:-18px 0 28px;}
+  .sched{width:100%;max-width:420px;margin-top:24px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 20px 12px;}
+  .sched h2{font-family:'Shippori Mincho', serif;font-size:16px;margin:0 0 10px;text-align:left;}
+  .sched table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .sched th,.sched td{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left;font-weight:500;}
+  .sched th{color:#5a5a52;font-size:12px;}
+  .sched tr.next td{background:var(--moss-soft);color:var(--moss);font-weight:700;}
+  .sched tr.past td{color:#b0aea3;}
 </style>
 </head>
 <body>
 
 <p class="eyebrow">株主優待</p>
-<h1>次の権利確定日まで</h1>
+<h1>権利付き最終日まで</h1>
 
 <div class="card">
-  <div class="label">直近の主要な権利確定日</div>
+  <div class="label">次の月末権利の購入期限(権利付き最終日)</div>
   <div class="date" id="target-date">—</div>
+  <div class="date-sub" id="kakutei-date"></div>
 
   <div class="count-wrap">
     <span class="count" id="days">—</span>
@@ -127,51 +137,66 @@
   <div class="divider"></div>
 
   <div class="note">
-    ここで示すのは3月・6月・9月・12月の月末という、多くの企業に共通する代表的な権利確定日です。実際の日付や必要な購入タイミングは銘柄ごとに異なるため、必ず各企業の発表内容をご確認ください。
+    毎月末が権利確定日の銘柄を対象にした日程です。権利付き最終日までに買い、大引けまで保有する必要があります。実際の日付は銘柄ごとに異なるため、必ず各企業の発表内容と証券会社の案内をご確認ください。
   </div>
 </div>
 
+<div class="sched">
+  <h2>月末権利の日程</h2>
+  <table>
+    <thead><tr><th>月末</th><th>権利付き最終日</th><th>権利確定日</th></tr></thead>
+    <tbody id="sched-body"></tbody>
+  </table>
+</div>
+
 <footer>
-  株主優待の新設・変更・廃止情報を発信しているアカウントの参考資料です。
+  株主優待の新設・変更・廃止情報を発信しているアカウントの参考資料です。日程は証券会社の公開情報をもとにしており、投資判断はご自身でお願いします。
 </footer>
 
 <script>
-  function getNextQuarterEnd(from) {
-    const quarterMonths = [2, 5, 8, 11]; // 0-indexed: Mar, Jun, Sep, Dec
-    let year = from.getFullYear();
-    let candidates = [];
-
-    for (let y = year; y <= year + 1; y++) {
-      for (const m of quarterMonths) {
-        const lastDay = new Date(y, m + 1, 0); // last calendar day of month
-        candidates.push(lastDay);
-      }
-    }
-
-    candidates.sort((a, b) => a - b);
-    const startOfToday = new Date(from.getFullYear(), from.getMonth(), from.getDate());
-    for (const c of candidates) {
-      if (c >= startOfToday) return c;
-    }
-    return candidates[0];
-  }
-
-  function formatDate(d) {
-    const y = d.getFullYear();
-    const m = d.getMonth() + 1;
-    const day = d.getDate();
-    return y + "年" + m + "月" + day + "日";
-  }
+  // [月末, 権利付き最終日, 権利確定日] ※証券会社公表の日程(2026年10月〜2027年7月)
+  const SCHEDULE = [
+    ["2026-10","2026-10-28","2026-10-30"],
+    ["2026-11","2026-11-26","2026-11-30"],
+    ["2026-12","2026-12-28","2026-12-30"],
+    ["2027-01","2027-01-27","2027-01-29"],
+    ["2027-02","2027-02-24","2027-02-26"],
+    ["2027-03","2027-03-29","2027-03-31"],
+    ["2027-04","2027-04-27","2027-04-30"],
+    ["2027-05","2027-05-27","2027-05-31"],
+    ["2027-06","2027-06-28","2027-06-30"],
+    ["2027-07","2027-07-28","2027-07-30"]
+  ];
+  const WD = ["日","月","火","水","木","金","土"];
+  function parse(str){ const p=str.split("-").map(Number); return new Date(p[0],p[1]-1,p[2]); }
+  function md(d){ return (d.getMonth()+1)+"/"+d.getDate()+"("+WD[d.getDay()]+")"; }
+  function formatDate(d){ return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日("+WD[d.getDay()]+")"; }
 
   const now = new Date();
-  const target = getNextQuarterEnd(now);
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const diffDays = Math.round((target - startOfToday) / (1000 * 60 * 60 * 24));
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const rows = SCHEDULE.map(r => ({ label:r[0], last:parse(r[1]), fix:parse(r[2]) }));
+  const next = rows.find(r => r.last >= today);
 
-  document.getElementById("target-date").textContent = formatDate(target);
-  document.getElementById("days").textContent = diffDays === 0 ? "当日" : diffDays;
-  document.getElementById("today-label").textContent =
-    diffDays === 0 ? "今日が権利確定日です" : "本日: " + formatDate(now);
+  if (next) {
+    const diff = Math.round((next.last - today) / 86400000);
+    document.getElementById("target-date").textContent = formatDate(next.last);
+    document.getElementById("kakutei-date").textContent = "権利確定日:" + formatDate(next.fix);
+    document.getElementById("days").textContent = diff === 0 ? "本日" : diff;
+    document.getElementById("today-label").textContent = diff === 0 ? "今日が権利付き最終日です(大引けまでに約定・保有)" : "本日: " + formatDate(now);
+  } else {
+    document.getElementById("target-date").textContent = "日程を更新中です";
+    document.getElementById("days").textContent = "—";
+  }
+
+  const tbody = document.getElementById("sched-body");
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+    if (r.last < today) tr.className = "past";
+    else if (next && r === next) tr.className = "next";
+    const m = r.label.split("-");
+    tr.innerHTML = "<td>" + m[0] + "年" + Number(m[1]) + "月末</td><td>" + md(r.last) + "</td><td>" + md(r.fix) + "</td>";
+    tbody.appendChild(tr);
+  });
 </script>
 
 </body>
